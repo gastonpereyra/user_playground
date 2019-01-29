@@ -19,7 +19,7 @@ module.exports = (app, route, users) => {
   passport.use(strategy);
   passport.initialize();
   // Nuestro unico Endpoint
-  app.use('/graphql', (req, res, next) => {
+  app.use(routes, (req, res, next) => {
     passport.authenticate('jwt', { session: false }, (err, user, info) => {
       if (user) { req.user = user }
       next()
