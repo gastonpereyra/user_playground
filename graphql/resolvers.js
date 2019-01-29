@@ -41,7 +41,6 @@ module.exports = {
             const result = bcrypt.compareSync(password, user.password);
             if (!result) throw new Error();
             const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET)
-            auth = user.id;
             return ({
               token,
               "userName": user.userName
@@ -54,7 +53,6 @@ module.exports = {
 
       return users.create(input)
         .then( newUser => {
-          auth= newUser.id;
           const token = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET);
           return ({
               token,
