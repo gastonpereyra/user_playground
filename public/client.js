@@ -1,59 +1,71 @@
 const API = 'https://user-playground.glitch.me/graphql';
+//************************************************************
 
-async function checkUser(username) {
-  return fetch(API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    // Le paso el Query en JSON
-    body: JSON.stringify({ 
-      query: `{ 
-          isUserName(userName:"${username}")
-        }` 
-      }),
-    })
-    .then(res => res.json())
-    .then(res => res.data.isUserName)
-    .catch(err => {console.log(err)});
-}
+// Query
+const isUserName = (username) => `
+{ 
+  info: isUserName(userName:"${username}")
+}`;
 
-async function checkEmail(email) {
-  return fetch(API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    // Le paso el Query en JSON
-    body: JSON.stringify({ 
-      query: `{ 
-          isEmail(email:"${email}")
-        }` 
-      }),
-    })
-    .then(res => res.json())
-    .then(res => res.data.isEmail)
-    .catch(err => {console.log(err)});
-}
+const isEmail = (email) => (`
+{ 
+  info: isEmail(email:"${email}")
+}`);
 
-async function getUser(token) {
+const me = () => `
+{ 
+  info: me {
+    userName
+    email
+    role
+    createdAt
+    updatedAt
+  }
+}`;
+
+const getUsers = () => `
+{ 
+  info: getUsers {
+    id
+    userName
+    email
+    role
+    createdAt
+    updatedAt
+  }
+}`;
+
+const getUser = (id) => `
+{ 
+  info: getUser(id: ${id} {
+    userName
+    email
+    role
+    createdAt
+    updatedAt
+  }
+}`;
+
+// Función para Buscar en la API
+async function getInfo(search, token) {
+  const jwt = token ? token : "";
   return fetch(API, {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${jwt}`
     },
-    // Le paso el Query en JSON
     body: JSON.stringify({ 
-      query: `{ 
-          me {
-            userName
-            email
-            role
-          }
-        }` 
+      query: search 
       }),
     })
     .then(res => res.json())
-    .then(res => res.data.me)
-    .catch(err => {console.log(err)});
+    .then(res => res.data.info);
 }
+
+//************************************************************
+
+
 
 async function register(username, email, password, token) {
   return fetch(API, {
@@ -129,7 +141,7 @@ const app = new Vue({
       this.menu= !this.menu;
     },
     l_checkUser: async function (e) {
-      this.l_userVal= (await checkUser(this.l_username));
+      this.l_userVal= (await getInfo(isUserName(this.l_username),this.token));
     },
     l_checkPassword: async function (e) {
       this.l_passVal= this.l_password.length>3 && this.l_password.length<17;
@@ -141,10 +153,11 @@ const app = new Vue({
       e.preventDefault();
     },
     checkUser: async function (e) {
-      this.userVal= !(await checkUser(this.username));
+      this.userVal= !(await getInfo(isUserName(this.username),this.token));
     },
     checkEmail: async function (e) {
-      this.emailVal= !(await checkEmail(this.email)) && this.email.match(/^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/);
+      const emailCheck= /^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+      this.emailVal= !(await getInfo(isEmail(this.email),this.token)) && this.email.match(emailCheck);
     },
     checkPassword: async function (e) {
       this.passVal= this.password.length>3 && this.password.length<17;
@@ -156,7 +169,7 @@ const app = new Vue({
       e.preventDefault();
     },
     getUser: async function() {
-      const user = await getUser(this.token);
+      const user = await getInfo(me(), this.token).catch(err => {console.log(err)});
       this.u_username= user.userName;
       this.u_email = user.email
       this.u_role = user.role === 0 ? "Usuario" : user.role === 1 ? "Mod" : "Admin";
